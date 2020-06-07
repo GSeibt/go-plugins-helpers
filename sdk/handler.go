@@ -1,11 +1,15 @@
 package sdk
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 const activatePath = "/Plugin.Activate"
@@ -30,11 +34,36 @@ func NewHandler(manifest string) Handler {
 
 // Serve sets up the handler to serve requests on the passed in listener
 func (h Handler) Serve(l net.Listener) error {
-	server := http.Server{
+
+	// Listen for SIGINT and SIGTERM
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	// Transport error returned by http.Server#Serve
+	srvErr := make(chan error, 1)
+
+	srv := http.Server{
 		Addr:    l.Addr().String(),
 		Handler: h.mux,
 	}
-	return server.Serve(l)
+
+	// Handle requests concurrently
+	go func() {
+		srvErr <- srv.Serve(l)
+	}()
+
+	// Wait for an OS termination signal
+	<-sigs
+
+	// Wait at most 10 seconds for the srv.Shutdown method to return
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		return err
+	} else {
+		return <-srvErr
+	}
 }
 
 // ServeTCP makes the handler to listen for request in a given TCP address.
