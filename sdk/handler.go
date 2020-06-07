@@ -100,18 +100,7 @@ func (h Handler) Serve(l net.Listener) io.Closer {
 // of docker daemon must be provided. To get default directory, use
 // WindowsDefaultDaemonRootDir() function. On Unix, this parameter is ignored.
 func (h Handler) ServeTCP(pluginName, addr, daemonDir string, tlsConfig *tls.Config) (io.Closer, error) {
-	l, spec, err := newTCPListener(addr, pluginName, daemonDir, tlsConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	closer := h.Serve(l)
-	deleter := specDeleter{
-		serverCloser: closer,
-		spec:         spec,
-	}
-
-	return deleter, nil
+	return h.serveListener(newTCPListener(addr, pluginName, daemonDir, tlsConfig))
 }
 
 // ServeUnix sets up the Handler to asynchronously listen for requests to a unix socket.
@@ -119,18 +108,7 @@ func (h Handler) ServeTCP(pluginName, addr, daemonDir string, tlsConfig *tls.Con
 // Calling the Close method of the returned Closer will delete the spec file, gracefully shut down the
 // server answering requests and return the resulting error (see http.Server#Serve(net.Listener)).
 func (h Handler) ServeUnix(addr string, gid int) (io.Closer, error) {
-	l, spec, err := newUnixListener(addr, gid)
-	if err != nil {
-		return nil, err
-	}
-
-	closer := h.Serve(l)
-	deleter := specDeleter{
-		serverCloser: closer,
-		spec:         spec,
-	}
-
-	return deleter, nil
+	return h.serveListener(newUnixListener(addr, gid))
 }
 
 // ServeWindows sets up the Handler to asynchronously listen for requests to a Windows named pipe.
@@ -142,7 +120,12 @@ func (h Handler) ServeUnix(addr string, gid int) (io.Closer, error) {
 // of docker daemon must be provided. To get default directory, use
 // WindowsDefaultDaemonRootDir() function. On Unix, this parameter is ignored.
 func (h Handler) ServeWindows(addr, pluginName, daemonDir string, pipeConfig *WindowsPipeConfig) (io.Closer, error) {
-	l, spec, err := newWindowsListener(addr, pluginName, daemonDir, pipeConfig)
+	return h.serveListener(newWindowsListener(addr, pluginName, daemonDir, pipeConfig))
+}
+
+// Accepts the return values of new{TCP,Unix,Windows}Listener(...) and serves requests as described in the
+// functions documentation.
+func (h Handler) serveListener(l net.Listener, spec string, err error) (io.Closer, error) {
 	if err != nil {
 		return nil, err
 	}
