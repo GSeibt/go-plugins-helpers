@@ -4,11 +4,10 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 )
 
@@ -65,37 +64,25 @@ func NewHandler(manifest string) Handler {
 }
 
 // Serve sets up the handler to serve requests on the passed in listener
-func (h Handler) Serve(l net.Listener) error {
-
-	// Listen for SIGINT and SIGTERM
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-
-	// Transport error returned by http.Server#Serve
-	srvErr := make(chan error, 1)
-
+func (h Handler) Serve(l net.Listener) io.Closer {
 	srv := http.Server{
 		Addr:    l.Addr().String(),
 		Handler: h.mux,
 	}
 
-	// Handle requests concurrently
+	// Transport error returned by http.Server#Serve
+	srvErr := make(chan error, 1)
+
+	closer := serverCloser{
+		server: &srv,
+		err:    srvErr,
+	}
+
 	go func() {
 		srvErr <- srv.Serve(l)
 	}()
 
-	// Wait for an OS termination signal
-	<-sigs
-
-	// Wait at most 10 seconds for the srv.Shutdown method to return
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if err := srv.Shutdown(ctx); err != nil {
-		return err
-	}
-
-	return <-srvErr
+	return closer
 }
 
 // ServeTCP makes the handler to listen for request in a given TCP address.
@@ -103,28 +90,36 @@ func (h Handler) Serve(l net.Listener) error {
 // Due to constrains for running Docker in Docker on Windows, data-root directory
 // of docker daemon must be provided. To get default directory, use
 // WindowsDefaultDaemonRootDir() function. On Unix, this parameter is ignored.
-func (h Handler) ServeTCP(pluginName, addr, daemonDir string, tlsConfig *tls.Config) error {
+func (h Handler) ServeTCP(pluginName, addr, daemonDir string, tlsConfig *tls.Config) (io.Closer, error) {
 	l, spec, err := newTCPListener(addr, pluginName, daemonDir, tlsConfig)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if spec != "" {
-		defer os.Remove(spec)
+
+	closer := h.Serve(l)
+	deleter := specDeleter{
+		serverCloser: closer,
+		spec:         spec,
 	}
-	return h.Serve(l)
+
+	return deleter, nil
 }
 
 // ServeUnix makes the handler to listen for requests in a unix socket.
 // It also creates the socket file in the right directory for docker to read.
-func (h Handler) ServeUnix(addr string, gid int) error {
+func (h Handler) ServeUnix(addr string, gid int) (io.Closer, error) {
 	l, spec, err := newUnixListener(addr, gid)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if spec != "" {
-		defer os.Remove(spec)
+
+	closer := h.Serve(l)
+	deleter := specDeleter{
+		serverCloser: closer,
+		spec:         spec,
 	}
-	return h.Serve(l)
+
+	return deleter, nil
 }
 
 // ServeWindows makes the handler to listen for request in a Windows named pipe.
@@ -132,15 +127,19 @@ func (h Handler) ServeUnix(addr string, gid int) error {
 // Due to constrains for running Docker in Docker on Windows, data-root directory
 // of docker daemon must be provided. To get default directory, use
 // WindowsDefaultDaemonRootDir() function. On Unix, this parameter is ignored.
-func (h Handler) ServeWindows(addr, pluginName, daemonDir string, pipeConfig *WindowsPipeConfig) error {
+func (h Handler) ServeWindows(addr, pluginName, daemonDir string, pipeConfig *WindowsPipeConfig) (io.Closer, error) {
 	l, spec, err := newWindowsListener(addr, pluginName, daemonDir, pipeConfig)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if spec != "" {
-		defer os.Remove(spec)
+
+	closer := h.Serve(l)
+	deleter := specDeleter{
+		serverCloser: closer,
+		spec:         spec,
 	}
-	return h.Serve(l)
+
+	return deleter, nil
 }
 
 // HandleFunc registers a function to handle a request path with.
