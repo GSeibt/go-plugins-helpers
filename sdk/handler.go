@@ -61,9 +61,9 @@ func (h Handler) Serve(l net.Listener) error {
 
 	if err := srv.Shutdown(ctx); err != nil {
 		return err
-	} else {
-		return <-srvErr
 	}
+
+	return <-srvErr
 }
 
 // ServeTCP makes the handler to listen for request in a given TCP address.
