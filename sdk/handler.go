@@ -14,6 +14,38 @@ import (
 
 const activatePath = "/Plugin.Activate"
 
+type serverCloser struct {
+	server *http.Server
+	err chan error
+}
+
+func (s serverCloser) Close() error {
+	// Wait at most 10 seconds for the server.Shutdown method to return
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := s.server.Shutdown(ctx); err != nil {
+		return err
+	}
+
+	return <-s.err
+}
+
+type specDeleter struct {
+	serverCloser io.Closer
+	spec         string
+}
+
+func (s specDeleter) Close() error {
+	err := s.serverCloser.Close()
+
+	if s.spec != "" {
+		os.Remove(s.spec)
+	}
+
+	return err
+}
+
 // Handler is the base to create plugin handlers.
 // It initializes connections and sockets to listen to.
 type Handler struct {
