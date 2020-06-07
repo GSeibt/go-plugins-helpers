@@ -13,9 +13,12 @@ import (
 
 const activatePath = "/Plugin.Activate"
 
+// serverCloser is an io.Closer whose Close method shuts down the referenced http.Server using its ShutDown method.
+// The channel 'err' receives the error produced by the Serve method of the server. This error is returned by the
+// Close method.
 type serverCloser struct {
 	server *http.Server
-	err chan error
+	err    chan error
 }
 
 func (s serverCloser) Close() error {
@@ -30,6 +33,7 @@ func (s serverCloser) Close() error {
 	return <-s.err
 }
 
+// specDeleter extends serverCloser to additionally delete the spec file.
 type specDeleter struct {
 	serverCloser io.Closer
 	spec         string
@@ -63,7 +67,9 @@ func NewHandler(manifest string) Handler {
 	return Handler{mux: mux}
 }
 
-// Serve sets up the handler to serve requests on the passed in listener
+// Serve sets up the Handler to asynchronously serve requests using the passed in Listener.
+// Calling the Close method of the returned Closer will gracefully shut down the server answering requests
+// and return the resulting error (see http.Server#Serve(net.Listener)).
 func (h Handler) Serve(l net.Listener) io.Closer {
 	srv := http.Server{
 		Addr:    l.Addr().String(),
@@ -85,8 +91,11 @@ func (h Handler) Serve(l net.Listener) io.Closer {
 	return closer
 }
 
-// ServeTCP makes the handler to listen for request in a given TCP address.
+// ServeTCP sets up the Handler to asynchronously listen for requests to a TCP address.
 // It also writes the spec file in the right directory for docker to read.
+// Calling the Close method of the returned Closer will delete the spec file, gracefully shut down the
+// server answering requests and return the resulting error (see http.Server#Serve(net.Listener)).
+//
 // Due to constrains for running Docker in Docker on Windows, data-root directory
 // of docker daemon must be provided. To get default directory, use
 // WindowsDefaultDaemonRootDir() function. On Unix, this parameter is ignored.
@@ -105,8 +114,10 @@ func (h Handler) ServeTCP(pluginName, addr, daemonDir string, tlsConfig *tls.Con
 	return deleter, nil
 }
 
-// ServeUnix makes the handler to listen for requests in a unix socket.
+// ServeUnix sets up the Handler to asynchronously listen for requests to a unix socket.
 // It also creates the socket file in the right directory for docker to read.
+// Calling the Close method of the returned Closer will delete the spec file, gracefully shut down the
+// server answering requests and return the resulting error (see http.Server#Serve(net.Listener)).
 func (h Handler) ServeUnix(addr string, gid int) (io.Closer, error) {
 	l, spec, err := newUnixListener(addr, gid)
 	if err != nil {
@@ -122,8 +133,11 @@ func (h Handler) ServeUnix(addr string, gid int) (io.Closer, error) {
 	return deleter, nil
 }
 
-// ServeWindows makes the handler to listen for request in a Windows named pipe.
+// ServeWindows sets up the Handler to asynchronously listen for requests to a Windows named pipe.
 // It also creates the spec file in the right directory for docker to read.
+// Calling the Close method of the returned Closer will delete the spec file, gracefully shut down the
+// server answering requests and return the resulting error (see http.Server#Serve(net.Listener)).
+//
 // Due to constrains for running Docker in Docker on Windows, data-root directory
 // of docker daemon must be provided. To get default directory, use
 // WindowsDefaultDaemonRootDir() function. On Unix, this parameter is ignored.
