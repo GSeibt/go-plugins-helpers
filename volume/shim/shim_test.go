@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"testing"
 
+	volumeplugin "github.com/GSeibt/go-plugins-helpers/volume"
 	"github.com/docker/docker/volume"
 	"github.com/docker/go-connections/sockets"
-	volumeplugin "github.com/docker/go-plugins-helpers/volume"
 )
 
 type testVolumeDriver struct{}

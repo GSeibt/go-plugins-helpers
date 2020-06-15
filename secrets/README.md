@@ -13,7 +13,7 @@ This library is designed to be integrated in your program.
 ### Example using TCP sockets:
 
 ```go
-  import "github.com/docker/go-plugins-helpers/secrets"
+  import "github.com/GSeibt/go-plugins-helpers/secrets"
 
   d := MySecretsDriver{}
   h := secrets.NewHandler(d)
@@ -23,7 +23,7 @@ This library is designed to be integrated in your program.
 ### Example using Unix sockets:
 
 ```go
-  import "github.com/docker/go-plugins-helpers/secrets"
+  import "github.com/GSeibt/go-plugins-helpers/secrets"
 
   d := MySecretsDriver{}
   h := secrets.NewHandler(d)

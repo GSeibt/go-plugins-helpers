@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/go-plugins-helpers/sdk"
+	"github.com/GSeibt/go-plugins-helpers/sdk"
 )
 
 type TestDriver struct {

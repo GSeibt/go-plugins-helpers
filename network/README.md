@@ -15,7 +15,7 @@ On Unix, this parameter is ignored.
 ### Example using TCP sockets:
 
 ```go
-  import "github.com/docker/go-plugins-helpers/network"
+  import "github.com/GSeibt/go-plugins-helpers/network"
 
   d := MyNetworkDriver{}
   h := network.NewHandler(d)
@@ -27,7 +27,7 @@ On Unix, this parameter is ignored.
 ### Example using Unix sockets:
 
 ```go
-  import "github.com/docker/go-plugins-helpers/network"
+  import "github.com/GSeibt/go-plugins-helpers/network"
 
   d := MyNetworkDriver{}
   h := network.NewHandler(d)
@@ -37,8 +37,8 @@ On Unix, this parameter is ignored.
 ### Example using Windows named pipes:
 
 ```go
-import "github.com/docker/go-plugins-helpers/network"
-import "github.com/docker/go-plugins-helpers/sdk"
+import "github.com/GSeibt/go-plugins-helpers/network"
+import "github.com/GSeibt/go-plugins-helpers/sdk"
 
 d := MyNetworkDriver{}
 h := network.NewHandler(d)

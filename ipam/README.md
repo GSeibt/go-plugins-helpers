@@ -13,7 +13,7 @@ This library is designed to be integrated in your program.
 ### Example using TCP sockets:
 
 ```go
-  import "github.com/docker/go-plugins-helpers/ipam"
+  import "github.com/GSeibt/go-plugins-helpers/ipam"
 
   d := MyIPAMDriver{}
   h := ipam.NewHandler(d)
@@ -23,7 +23,7 @@ This library is designed to be integrated in your program.
 ### Example using Unix sockets:
 
 ```go
-  import "github.com/docker/go-plugins-helpers/ipam"
+  import "github.com/GSeibt/go-plugins-helpers/ipam"
 
   d := MyIPAMDriver{}
   h := ipam.NewHandler(d)

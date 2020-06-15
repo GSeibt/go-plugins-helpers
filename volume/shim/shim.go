@@ -1,8 +1,8 @@
 package shim
 
 import (
+	volumeplugin "github.com/GSeibt/go-plugins-helpers/volume"
 	"github.com/docker/docker/volume"
-	volumeplugin "github.com/docker/go-plugins-helpers/volume"
 )
 
 type shimDriver struct {

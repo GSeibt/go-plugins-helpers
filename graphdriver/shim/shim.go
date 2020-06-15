@@ -5,11 +5,11 @@ import (
 	"io"
 	"log"
 
+	graphPlugin "github.com/GSeibt/go-plugins-helpers/graphdriver"
 	graphDriver "github.com/docker/docker/daemon/graphdriver"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/containerfs"
 	"github.com/docker/docker/pkg/idtools"
-	graphPlugin "github.com/docker/go-plugins-helpers/graphdriver"
 )
 
 type shimDriver struct {

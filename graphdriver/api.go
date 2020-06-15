@@ -6,10 +6,10 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/GSeibt/go-plugins-helpers/sdk"
 	graphDriver "github.com/docker/docker/daemon/graphdriver"
 	"github.com/docker/docker/pkg/containerfs"
 	"github.com/docker/docker/pkg/idtools"
-	"github.com/docker/go-plugins-helpers/sdk"
 )
 
 const (

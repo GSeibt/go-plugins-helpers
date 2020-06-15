@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/docker/go-plugins-helpers/sdk"
+	"github.com/GSeibt/go-plugins-helpers/sdk"
 )
 
 const (
